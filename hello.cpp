@@ -18,11 +18,15 @@ void keyPressEventMonitor(HumanPlayer& humanObj, clockObject& globalClock, Ball&
     // if (elapsedTime % 1000 == 0)
     //     std::cout << "Elapsed Time: " << elapsedTime << std::endl;
     // not enought time has passed
+
     if (elapsedTime <= timeStep)
         return;
 
+    // update global clock, so we can keep track of time
+    // thing it as a "lap", global clock set to the last valid action frame
     globalClock = chrono::steady_clock::now();
-    // std::cout << std::chrono::duration_cast<chrono::milliseconds>(globalClock - dummy).count() << std::endl;
+
+
 
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::Up)){
         humanObj.getStick().moveDown();
@@ -56,45 +60,56 @@ void keyPressEventMonitor(HumanPlayer& humanObj, clockObject& globalClock, Ball&
         ballObj.moveXPos();
     }
 
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Subtract))
+    {
+        std::cout << "Ball Size-" << std::endl;
+        ballObj.decreaseSize();
+    }
 
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Add))
+    {
+        std::cout << "Ball Size+" << std::endl;
+        ballObj.increaseSize();
+    }
 }
-
-
-
 
 
 int main()
 {
-    int windowWidth = 640;
+    int windowWidth = 480;
     int windowHeight = 480;
 
-    int deskX = 1000;
-    int deskY = 500;
-
     HumanPlayer humanPlayer = HumanPlayer();
-    Desk desk = Desk(deskX, deskY);
-    Ball ball = Ball(50, 50, 1);
+    Desk desk = Desk(windowWidth, windowHeight);
+    Ball ball = Ball(50, 50, -0.01, 5);
 
     auto globalClock = chrono::steady_clock::now();
 
     
 
-    // stick drawing object
-    sf::RectangleShape sf_stick;
-    sf_stick.setFillColor(sf::Color::Blue);
-    sf_stick.setSize(sf::Vector2f(10, humanPlayer.getStick().getStickLength() / 100.0 * windowHeight));
+    // stick drawing object inside Desk
+    desk.drawStickFirstTime(humanPlayer);
     
-    // ball drawing object
-    sf::CircleShape sf_ball;
-    sf_ball.setFillColor(sf::Color::Blue);
-    sf_ball.setRadius(10);
-    sf_ball.setPosition(ball.getPositionX() / 100 * windowWidth,  ball.getPositionY() / 100 * windowHeight);
+    // ball drawing object inside Desk
+    desk.drawBallFirstTime(ball);
+    
 
 
     sf::RenderWindow window(sf::VideoMode(windowWidth, windowHeight), "Happy go PingPong!");
 
     while (window.isOpen())
     {
+
+        int currentState = desk.getDeskState();
+
+        // game is idle
+        if (currentState == 0){
+            window.clear();
+            window.display();
+            continue;
+        }
+
+            
         sf::Event event;
         while (window.pollEvent(event))
         {
@@ -102,23 +117,20 @@ int main()
                 window.close();
         }
 
+        // detect key press, take necessary actions
+        // TODO: update based on time count, return from keyPress, not void
         keyPressEventMonitor(humanPlayer, globalClock, ball);
-        // std::cout << humanPlayer.getStick().getStickPosition() << std::endl;
-        sf_stick.setPosition(
-            10,
-            humanPlayer.getStick().getStickPosition() / 100.0 * windowHeight
-        );
 
-        sf_ball.setPosition(
-            ball.getPositionX() / 100 * windowWidth,  
-            ball.getPositionY() / 100 * windowHeight
-        );
-
-        cout << ball.getPositionY() << endl;
+        // TODO: put desk into keyPress...
+        desk.oneFrameBallAction(ball);
+        
+        // things have been updated, update their position in desk
+        desk.redrawStick(humanPlayer);
+        desk.redrawBall(ball);
 
         window.clear();
-        window.draw(sf_stick);
-        window.draw(sf_ball);
+        window.draw(desk.getSFStick());
+        window.draw(desk.getSFBall());
         window.display();
     }
 

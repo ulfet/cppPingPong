@@ -1,6 +1,7 @@
 # define boundaryUpY 100
 # define boundaryDownY 0
 # define stepY 1
+#include <iostream>
 
 class Stick
 {
